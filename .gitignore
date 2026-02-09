@@ -1,0 +1,32 @@
+# OAuth credentials and tokens
+credentials.json
+**/credentials.json
+gmail-*.json
+**/gmail-*.json
+**/token*.json
+
+# Environment files
+.env
+.env.*
+*.env
+
+# MCP config (may contain client secrets)
+.mcp.json
+
+# Secrets directory
+secrets/
+
+# Node
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
