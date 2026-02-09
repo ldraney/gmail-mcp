@@ -10,35 +10,31 @@ Complete the [Google OAuth Setup Guide](https://github.com/ldraney/calendar-mcp/
 - Enabling APIs (including Gmail API)
 - Configuring the OAuth consent screen
 - Adding test users
-- Creating OAuth 2.0 Desktop credentials
+- Creating OAuth 2.0 **Desktop** credentials
 - Downloading `credentials.json` to `~/secrets/google-oauth/credentials.json`
-- Running the initial token exchange script
 
 **Do not duplicate that setup.** Everything below is Gmail-specific.
+
+> **Note:** This guide depends on the shared OAuth guide (calendar-mcp#2). If that guide is not yet available, you will need to complete the Google Cloud project and OAuth consent screen setup yourself before continuing.
 
 ---
 
 ## 1. Gmail-Specific OAuth Scopes
 
-The Gmail API uses granular scopes. When running the token exchange script from the OAuth guide, request these scopes for Gmail access:
+The Gmail API uses granular scopes. When the `gmail-mcp` server initiates the OAuth flow in your browser, it will request permissions based on these scopes:
 
 | Scope | URL | Allows |
 |-------|-----|--------|
 | `gmail.readonly` | `https://www.googleapis.com/auth/gmail.readonly` | Read messages, threads, labels, drafts, and profile info. No modifications. |
 | `gmail.send` | `https://www.googleapis.com/auth/gmail.send` | Send and forward emails, send drafts. Does not grant read access. |
 | `gmail.modify` | `https://www.googleapis.com/auth/gmail.modify` | All of `readonly` plus: archive, trash/untrash, add/remove labels, batch modify. Does **not** include permanent delete or settings changes. |
+| Full access | `https://mail.google.com/` | Everything above plus permanent delete. Required for `gmail_message_delete`, `gmail_messages_batch_delete`, and `gmail_thread_delete`. |
 
 ### Which scopes to request
 
-For full `gmail-mcp` functionality, request all three:
+For full `gmail-mcp` functionality including permanent delete, all three granular scopes plus the full-access scope are needed. The `gmail-mcp` server handles scope requests automatically during the OAuth flow.
 
-```
-https://www.googleapis.com/auth/gmail.readonly
-https://www.googleapis.com/auth/gmail.send
-https://www.googleapis.com/auth/gmail.modify
-```
-
-**Note:** `gmail.modify` is a superset of `gmail.readonly` for message operations, but the `gmail-mcp` server checks for each scope individually. Request all three to avoid permission errors.
+If you do not need permanent delete, the three granular scopes (`gmail.readonly`, `gmail.send`, `gmail.modify`) are sufficient.
 
 ### Scope vs. what it unlocks in gmail-mcp
 
@@ -62,133 +58,58 @@ https://www.googleapis.com/auth/gmail.modify
 | `gmail_draft_create`, `gmail_draft_update`, `gmail_draft_delete` | `gmail.modify` |
 | `gmail_filter_create`, `gmail_filter_delete` | `gmail.modify` |
 | `gmail_vacation_set` | `gmail.modify` |
-| `gmail_message_delete`, `gmail_messages_batch_delete`, `gmail_thread_delete` | `gmail.modify` |
+| `gmail_message_delete`, `gmail_messages_batch_delete` | `https://mail.google.com/` (full access) |
+| `gmail_thread_delete` | `https://mail.google.com/` (full access) |
+
+> **Note:** Trash operations (`gmail_message_trash`, `gmail_thread_trash`) use `gmail.modify` and move items to Trash. Permanent delete operations (`gmail_message_delete`, `gmail_thread_delete`) bypass Trash entirely and require the full `https://mail.google.com/` scope. Google will reject permanent delete API calls made with only `gmail.modify`.
 
 ---
 
-## 2. Multi-Account Token Management
+## 2. Multi-Account Setup
 
-We manage three Gmail accounts, each with its own OAuth refresh token:
+We manage three Gmail accounts. The `gmail-mcp` server handles OAuth and token management itself -- you run one server instance per account, and each server handles its own authentication through a browser-based OAuth flow.
 
-| Account | Token file |
-|---------|-----------|
-| `draneylucas@gmail.com` | `~/secrets/google-oauth/gmail-draneylucas.json` |
-| `lucastoddraney@gmail.com` | `~/secrets/google-oauth/gmail-lucastoddraney.json` |
-| `devopsphilosopher@gmail.com` | `~/secrets/google-oauth/gmail-devopsphilosopher.json` |
+| Account | Server name | Port |
+|---------|------------|------|
+| `draneylucas@gmail.com` | `gmail-draneylucas` | 3010 |
+| `lucastoddraney@gmail.com` | `gmail-lucastoddraney` | 3011 |
+| `devopsphilosopher@gmail.com` | `gmail-devopsphilosopher` | 3012 |
 
-### Token file naming convention
+### How authentication works
+
+The `gmail-mcp` server uses **Desktop** OAuth credentials (the same `credentials.json` from the [OAuth guide](https://github.com/ldraney/calendar-mcp/blob/main/docs/google-oauth-setup.md)). There is no need to create separate Web Application credentials.
+
+The flow is:
+
+1. Claude Code starts the `gmail-mcp` server (via `.mcp.json` config)
+2. On first use, the server opens your browser for Google sign-in
+3. You sign in with the correct Google account and grant permissions
+4. The server receives the authorization code via a local loopback redirect and exchanges it for tokens
+5. The server stores and manages tokens automatically, refreshing them as needed
+
+**Important:** When the browser opens, make sure you sign in with the correct Google account for that server instance. If you are already signed into a different account, use the account picker or an incognito window.
+
+After the initial auth, the server uses refresh tokens automatically. You only need to re-authorize if you revoke access or the refresh token expires.
+
+### Verifying the connection
+
+After authentication, use the `gmail_get_profile` tool through Claude Code to verify each account is connected:
 
 ```
-~/secrets/google-oauth/gmail-{account-name}.json
+Ask Claude: "Use the gmail-draneylucas server to get my Gmail profile"
 ```
 
-Where `{account-name}` is the part before `@gmail.com`. This keeps Gmail tokens clearly separated from Calendar tokens (which use `calendar-{account-name}.json`).
-
-### Authorizing each account
-
-Run the token exchange script from the [OAuth guide](https://github.com/ldraney/calendar-mcp/blob/main/docs/google-oauth-setup.md) once per account. Each run opens a browser where you sign in as that specific Google account and grant consent.
-
-```bash
-# Authorize draneylucas@gmail.com
-python3 ~/calendar-mcp/scripts/get-refresh-token.py \
-  --credentials ~/secrets/google-oauth/credentials.json \
-  --scopes "https://www.googleapis.com/auth/gmail.readonly,https://www.googleapis.com/auth/gmail.send,https://www.googleapis.com/auth/gmail.modify" \
-  --output ~/secrets/google-oauth/gmail-draneylucas.json
-
-# Authorize lucastoddraney@gmail.com
-python3 ~/calendar-mcp/scripts/get-refresh-token.py \
-  --credentials ~/secrets/google-oauth/credentials.json \
-  --scopes "https://www.googleapis.com/auth/gmail.readonly,https://www.googleapis.com/auth/gmail.send,https://www.googleapis.com/auth/gmail.modify" \
-  --output ~/secrets/google-oauth/gmail-lucastoddraney.json
-
-# Authorize devopsphilosopher@gmail.com
-python3 ~/calendar-mcp/scripts/get-refresh-token.py \
-  --credentials ~/secrets/google-oauth/credentials.json \
-  --scopes "https://www.googleapis.com/auth/gmail.readonly,https://www.googleapis.com/auth/gmail.send,https://www.googleapis.com/auth/gmail.modify" \
-  --output ~/secrets/google-oauth/gmail-devopsphilosopher.json
-```
-
-**Important:** When the browser opens for each command, make sure you sign in with the correct Google account. If you are already signed into a different account, use the account picker or an incognito window.
-
-### Token file format
-
-Each token file is a JSON object containing the OAuth tokens:
-
-```json
-{
-  "access_token": "ya29.a0...",
-  "refresh_token": "1//0e...",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "client_id": "123456789.apps.googleusercontent.com",
-  "client_secret": "GOCSPX-...",
-  "scopes": [
-    "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/gmail.send",
-    "https://www.googleapis.com/auth/gmail.modify"
-  ]
-}
-```
-
-### Verifying tokens
-
-After authorization, verify each token works:
-
-```bash
-# Quick test: get the profile for each account
-# Replace TOKEN_FILE with the path to each token file
-TOKEN_FILE=~/secrets/google-oauth/gmail-draneylucas.json
-ACCESS_TOKEN=$(python3 -c "import json; print(json.load(open('$TOKEN_FILE'))['access_token'])")
-curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "https://gmail.googleapis.com/gmail/v1/users/me/profile" | python3 -m json.tool
-```
-
-You should see the email address in the response. If you get a 401 error, the access token may have expired -- the MCP server handles refresh automatically using the refresh token.
+You should see the email address in the response.
 
 ---
 
 ## 3. MCP Server Configuration for Claude Code
 
-The `gmail-mcp` server (npm package: `gmail-mcp`) uses an HTTP transport with a built-in OAuth proxy. You run one server instance per account.
+The `gmail-mcp` server (npm package: `gmail-mcp`) runs one instance per account. Choose **one** of the two approaches below.
 
-### How it works
+### Approach A: `.mcp.json` config (recommended)
 
-1. Start the `gmail-mcp` server with your Google OAuth client credentials
-2. The server handles the OAuth flow and token management
-3. Claude Code connects to the server via HTTP transport
-4. The server proxies Gmail API requests using the authenticated token
-
-### Running the server
-
-Each account needs its own server instance on a different port:
-
-```bash
-# draneylucas@gmail.com
-GOOGLE_CLIENT_ID='your-client-id' \
-GOOGLE_CLIENT_SECRET='your-client-secret' \
-MCP_TRANSPORT=http \
-PORT=3010 \
-npx gmail-mcp
-
-# lucastoddraney@gmail.com (different port)
-GOOGLE_CLIENT_ID='your-client-id' \
-GOOGLE_CLIENT_SECRET='your-client-secret' \
-MCP_TRANSPORT=http \
-PORT=3011 \
-npx gmail-mcp
-
-# devopsphilosopher@gmail.com (different port)
-GOOGLE_CLIENT_ID='your-client-id' \
-GOOGLE_CLIENT_SECRET='your-client-secret' \
-MCP_TRANSPORT=http \
-PORT=3012 \
-npx gmail-mcp
-```
-
-Get your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from `~/secrets/google-oauth/credentials.json` (the Desktop OAuth credentials you created in the [OAuth guide](https://github.com/ldraney/calendar-mcp/blob/main/docs/google-oauth-setup.md)).
-
-### Claude Code MCP config
-
-Add the following to your project-level `.mcp.json` or global `~/.claude/settings.json`. This example uses project-level config:
+Claude Code manages the server lifecycle. When Claude Code starts, it launches each server automatically. This is the simplest approach.
 
 **.mcp.json** (place in your project root):
 
@@ -201,7 +122,6 @@ Add the following to your project-level `.mcp.json` or global `~/.claude/setting
       "env": {
         "GOOGLE_CLIENT_ID": "YOUR_CLIENT_ID.apps.googleusercontent.com",
         "GOOGLE_CLIENT_SECRET": "GOCSPX-YOUR_SECRET",
-        "MCP_TRANSPORT": "http",
         "PORT": "3010"
       }
     },
@@ -211,7 +131,6 @@ Add the following to your project-level `.mcp.json` or global `~/.claude/setting
       "env": {
         "GOOGLE_CLIENT_ID": "YOUR_CLIENT_ID.apps.googleusercontent.com",
         "GOOGLE_CLIENT_SECRET": "GOCSPX-YOUR_SECRET",
-        "MCP_TRANSPORT": "http",
         "PORT": "3011"
       }
     },
@@ -221,7 +140,6 @@ Add the following to your project-level `.mcp.json` or global `~/.claude/setting
       "env": {
         "GOOGLE_CLIENT_ID": "YOUR_CLIENT_ID.apps.googleusercontent.com",
         "GOOGLE_CLIENT_SECRET": "GOCSPX-YOUR_SECRET",
-        "MCP_TRANSPORT": "http",
         "PORT": "3012"
       }
     }
@@ -229,34 +147,32 @@ Add the following to your project-level `.mcp.json` or global `~/.claude/setting
 }
 ```
 
-**Or add to `~/.claude/settings.json`** under the `"mcpServers"` key using the same structure above for global availability across all projects.
+Get your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from `~/secrets/google-oauth/credentials.json` (the Desktop OAuth credentials created in the [OAuth guide](https://github.com/ldraney/calendar-mcp/blob/main/docs/google-oauth-setup.md)).
 
-### First-time auth per account
+You can also add the same config to `~/.claude/settings.json` under the `"mcpServers"` key for global availability across all projects.
 
-When Claude Code first connects to each `gmail-mcp` server, the server will initiate the OAuth flow:
+### Approach B: Manual server management + CLI registration (alternative)
 
-1. The server opens a browser for Google sign-in
-2. Sign in with the correct Google account (e.g., `draneylucas@gmail.com` for the first server)
-3. Grant the requested Gmail permissions
-4. The callback completes and the server stores the token in memory
+If you prefer to manage server processes yourself (e.g., via tmux, systemd, or background processes), start each server manually and register them with Claude Code.
 
-After the initial auth, the server uses refresh tokens automatically. You only need to re-authorize if you revoke access or the refresh token expires.
-
-### Adding the server via CLI
-
-Alternatively, start the servers manually and add them via the `claude` CLI:
+**Step 1: Start the servers:**
 
 ```bash
-# Start each server in the background (or in separate terminals)
-GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' MCP_TRANSPORT=http PORT=3010 npx gmail-mcp &
-GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' MCP_TRANSPORT=http PORT=3011 npx gmail-mcp &
-GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' MCP_TRANSPORT=http PORT=3012 npx gmail-mcp &
+# Start each server in separate terminals or background processes
+GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' PORT=3010 npx gmail-mcp &
+GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' PORT=3011 npx gmail-mcp &
+GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' PORT=3012 npx gmail-mcp &
+```
 
-# Register each with Claude Code
+**Step 2: Register with Claude Code:**
+
+```bash
 claude mcp add --transport http gmail-draneylucas http://localhost:3010/mcp
 claude mcp add --transport http gmail-lucastoddraney http://localhost:3011/mcp
 claude mcp add --transport http gmail-devopsphilosopher http://localhost:3012/mcp
 ```
+
+> **Do not combine both approaches.** If you use `.mcp.json` (Approach A), Claude Code launches the servers itself. If you also start servers manually, you will have port conflicts. Pick one.
 
 ---
 
@@ -282,6 +198,7 @@ Use `gmail_threads_list` and `gmail_thread_get` over `gmail_messages_list` when 
 
 - `credentials.json` -- your Google OAuth client credentials
 - `gmail-*.json` -- per-account token files containing refresh tokens
+- `.mcp.json` -- if it contains client secrets (see below)
 - Any file containing `client_secret`, `refresh_token`, or `access_token`
 - `.env` files with OAuth credentials
 
@@ -291,7 +208,6 @@ Use `gmail_threads_list` and `gmail_thread_get` over `gmail_messages_list` when 
 # Restrict the secrets directory
 chmod 700 ~/secrets/google-oauth/
 chmod 600 ~/secrets/google-oauth/credentials.json
-chmod 600 ~/secrets/google-oauth/gmail-*.json
 ```
 
 ### .gitignore patterns
@@ -306,6 +222,9 @@ gmail-*.json
 **/gmail-*.json
 **/token*.json
 
+# MCP config with secrets
+.mcp.json
+
 # Environment files
 .env
 .env.*
@@ -319,9 +238,9 @@ secrets/
 
 The `.mcp.json` file contains your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. While client IDs are semi-public, client secrets should be protected:
 
-- If using a **project-level `.mcp.json`**, add it to `.gitignore` if the repo is public
-- If using **`~/.claude/settings.json`**, it is already outside any repo
-- Consider using environment variables in your shell profile instead of hardcoding in config files:
+- **Project-level `.mcp.json`**: Add it to `.gitignore` (included in the patterns above)
+- **`~/.claude/settings.json`**: Already outside any repo
+- **Environment variables** (most secure): Set credentials in your shell profile and reference them in config:
 
 ```bash
 # In ~/.bashrc or ~/.zshrc
@@ -340,7 +259,6 @@ Then reference them in `.mcp.json` (Claude Code expands env vars in MCP config):
       "env": {
         "GOOGLE_CLIENT_ID": "${GOOGLE_CLIENT_ID}",
         "GOOGLE_CLIENT_SECRET": "${GOOGLE_CLIENT_SECRET}",
-        "MCP_TRANSPORT": "http",
         "PORT": "3010"
       }
     }
@@ -354,5 +272,4 @@ If a token is compromised, revoke it immediately:
 
 1. Go to [Google Account Permissions](https://myaccount.google.com/permissions)
 2. Find your OAuth app and click **Remove Access**
-3. Delete the local token file: `rm ~/secrets/google-oauth/gmail-{account}.json`
-4. Re-authorize using the token exchange script
+3. Restart the `gmail-mcp` server for that account -- it will prompt for re-authentication on next use
