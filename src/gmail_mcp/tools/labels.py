@@ -77,7 +77,7 @@ def gmail_label_update(
             body["labelListVisibility"] = label_list_visibility
         if message_list_visibility is not None:
             body["messageListVisibility"] = message_list_visibility
-        result = service.users().labels().update(
+        result = service.users().labels().patch(
             userId="me", id=label_id, body=body
         ).execute()
         return json.dumps(result, indent=2)

@@ -35,13 +35,13 @@ def gmail_drafts_list(
 def gmail_draft_get(
     draft_id: Annotated[str, Field(description="The draft ID to retrieve")],
     account: Annotated[str | None, Field(description="Account alias or email")] = None,
-    format: Annotated[str, Field(description="Response format: 'full', 'metadata', 'minimal', or 'raw'")] = "full",
+    response_format: Annotated[str, Field(description="Response format: 'full', 'metadata', 'minimal', or 'raw'")] = "full",
 ) -> str:
     """Get a single draft by ID."""
     try:
         service = get_gmail_service(account)
         result = service.users().drafts().get(
-            userId="me", id=draft_id, format=format
+            userId="me", id=draft_id, format=response_format
         ).execute()
         return json.dumps(result, indent=2)
     except Exception as exc:

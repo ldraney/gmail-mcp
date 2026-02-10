@@ -141,7 +141,7 @@ claude mcp add gmail -- uvx ldraney-gmail-mcp
 
 ## 4. Available Tools
 
-Once connected, Claude Code gets access to 36 Gmail tools. Every tool accepts an optional `account` parameter (alias or email):
+Once connected, Claude Code gets access to 37 Gmail tools. Every tool accepts an optional `account` parameter (alias or email):
 
 - **Messages**: list, get, send, forward, modify labels, archive, trash/untrash, delete, batch operations
 - **Threads**: list, get (all messages), modify labels, trash/untrash, delete

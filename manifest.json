@@ -27,6 +27,7 @@
     }
   },
   "tools": [
+    { "name": "gmail_get_profile", "description": "Get authenticated user's Gmail profile" },
     { "name": "gmail_messages_list", "description": "List messages matching a query" },
     { "name": "gmail_message_get", "description": "Get a single message by ID" },
     { "name": "gmail_message_send", "description": "Send an email" },

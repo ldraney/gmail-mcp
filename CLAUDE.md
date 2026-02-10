@@ -8,7 +8,7 @@ src/gmail_mcp/
   auth.py              # OAuth (STUBBED — raises OAuthNotConfiguredError)
   accounts.py          # Multi-account resolution + service cache
   tools/
-    messages.py        # 12 tools: list, get, send, reply, forward, modify, archive, trash/untrash, delete, batch
+    messages.py        # 13 tools: profile, list, get, send, reply, forward, modify, archive, trash/untrash, delete, batch
     threads.py         # 6 tools: list, get, modify, trash/untrash, delete
     drafts.py          # 6 tools: list, get, create, update, send, delete
     labels.py          # 5 tools: list, get, create, update, delete

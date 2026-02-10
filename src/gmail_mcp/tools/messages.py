@@ -9,8 +9,21 @@ from typing import Annotated
 
 from pydantic import Field
 
-from ..accounts import get_gmail_service, get_account_email
+from ..accounts import get_gmail_service
 from ..server import mcp, _error_response
+
+
+@mcp.tool()
+def gmail_get_profile(
+    account: Annotated[str | None, Field(description="Account alias or email. Omit to auto-select if only one account is configured.")] = None,
+) -> str:
+    """Get the authenticated user's Gmail profile (email, messages total, threads total, history ID)."""
+    try:
+        service = get_gmail_service(account)
+        result = service.users().getProfile(userId="me").execute()
+        return json.dumps(result, indent=2)
+    except Exception as exc:
+        return _error_response(exc)
 
 
 @mcp.tool()
@@ -41,13 +54,13 @@ def gmail_messages_list(
 def gmail_message_get(
     message_id: Annotated[str, Field(description="The message ID to retrieve")],
     account: Annotated[str | None, Field(description="Account alias or email")] = None,
-    format: Annotated[str, Field(description="Response format: 'full', 'metadata', 'minimal', or 'raw'")] = "full",
+    response_format: Annotated[str, Field(description="Response format: 'full', 'metadata', 'minimal', or 'raw'")] = "full",
 ) -> str:
     """Get a single message by ID with full content."""
     try:
         service = get_gmail_service(account)
         result = service.users().messages().get(
-            userId="me", id=message_id, format=format
+            userId="me", id=message_id, format=response_format
         ).execute()
         return json.dumps(result, indent=2)
     except Exception as exc:

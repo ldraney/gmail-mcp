@@ -39,13 +39,13 @@ def gmail_threads_list(
 def gmail_thread_get(
     thread_id: Annotated[str, Field(description="The thread ID to retrieve")],
     account: Annotated[str | None, Field(description="Account alias or email")] = None,
-    format: Annotated[str, Field(description="Response format: 'full', 'metadata', or 'minimal'")] = "full",
+    response_format: Annotated[str, Field(description="Response format: 'full', 'metadata', or 'minimal'")] = "full",
 ) -> str:
     """Get a thread with all its messages."""
     try:
         service = get_gmail_service(account)
         result = service.users().threads().get(
-            userId="me", id=thread_id, format=format
+            userId="me", id=thread_id, format=response_format
         ).execute()
         return json.dumps(result, indent=2)
     except Exception as exc:
