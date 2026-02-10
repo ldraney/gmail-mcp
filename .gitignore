@@ -16,9 +16,38 @@ gmail-*.json
 # Secrets directory
 secrets/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# uv
+uv.lock
+
 # Node
 node_modules/
 package-lock.json
+
+# .mcpb bundles
+*.mcpb
+
+# Worktrees
+.worktrees/
 
 # OS
 .DS_Store

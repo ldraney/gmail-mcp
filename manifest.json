@@ -1,0 +1,75 @@
+{
+  "manifest_version": "0.4",
+  "name": "ldraney-gmail-mcp",
+  "display_name": "Gmail",
+  "version": "0.1.0",
+  "description": "MCP server for Gmail — read, triage, draft, and send across multiple accounts.",
+  "author": {
+    "name": "ldraney"
+  },
+  "server": {
+    "type": "uv",
+    "entry_point": "src/run_server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["tool", "run", "ldraney-gmail-mcp"],
+      "env": {
+        "SECRETS_DIR": "${user_config.secrets_dir}"
+      }
+    }
+  },
+  "user_config": {
+    "secrets_dir": {
+      "type": "string",
+      "title": "Secrets Directory",
+      "description": "Path to the directory containing Google OAuth credentials and token files. Defaults to ~/secrets/google-oauth/.",
+      "required": false
+    }
+  },
+  "tools": [
+    { "name": "gmail_messages_list", "description": "List messages matching a query" },
+    { "name": "gmail_message_get", "description": "Get a single message by ID" },
+    { "name": "gmail_message_send", "description": "Send an email" },
+    { "name": "gmail_message_reply", "description": "Reply to a message" },
+    { "name": "gmail_message_forward", "description": "Forward a message" },
+    { "name": "gmail_message_modify", "description": "Modify labels on a message" },
+    { "name": "gmail_message_archive", "description": "Archive a message" },
+    { "name": "gmail_message_trash", "description": "Trash a message" },
+    { "name": "gmail_message_untrash", "description": "Untrash a message" },
+    { "name": "gmail_message_delete", "description": "Permanently delete a message" },
+    { "name": "gmail_messages_batch_modify", "description": "Batch modify labels on messages" },
+    { "name": "gmail_messages_batch_delete", "description": "Batch permanently delete messages" },
+    { "name": "gmail_threads_list", "description": "List threads matching a query" },
+    { "name": "gmail_thread_get", "description": "Get a thread with all messages" },
+    { "name": "gmail_thread_modify", "description": "Modify labels on a thread" },
+    { "name": "gmail_thread_trash", "description": "Trash a thread" },
+    { "name": "gmail_thread_untrash", "description": "Untrash a thread" },
+    { "name": "gmail_thread_delete", "description": "Permanently delete a thread" },
+    { "name": "gmail_drafts_list", "description": "List drafts" },
+    { "name": "gmail_draft_get", "description": "Get a draft by ID" },
+    { "name": "gmail_draft_create", "description": "Create a new draft" },
+    { "name": "gmail_draft_update", "description": "Update an existing draft" },
+    { "name": "gmail_draft_send", "description": "Send a draft" },
+    { "name": "gmail_draft_delete", "description": "Delete a draft" },
+    { "name": "gmail_labels_list", "description": "List all labels" },
+    { "name": "gmail_label_get", "description": "Get a label by ID" },
+    { "name": "gmail_label_create", "description": "Create a new label" },
+    { "name": "gmail_label_update", "description": "Update a label" },
+    { "name": "gmail_label_delete", "description": "Delete a label" },
+    { "name": "gmail_attachment_get", "description": "Get attachment data from a message" },
+    { "name": "gmail_filters_list", "description": "List all filters" },
+    { "name": "gmail_filter_get", "description": "Get a filter by ID" },
+    { "name": "gmail_filter_create", "description": "Create a new filter" },
+    { "name": "gmail_filter_delete", "description": "Delete a filter" },
+    { "name": "gmail_vacation_get", "description": "Get vacation auto-reply settings" },
+    { "name": "gmail_vacation_set", "description": "Set vacation auto-reply settings" }
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "linux", "win32"],
+    "runtimes": {
+      "python": ">=3.10"
+    }
+  },
+  "keywords": ["gmail", "email", "google", "mcp", "multi-account"],
+  "license": "MIT"
+}
