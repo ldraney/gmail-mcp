@@ -7,8 +7,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from ..accounts import get_gmail_service
-from ..server import mcp, _error_response
+from ..server import mcp, get_client, _error_response, _slim_response
 
 
 @mcp.tool()
@@ -17,9 +16,9 @@ def gmail_labels_list(
 ) -> str:
     """List all labels in the account (system and user-created)."""
     try:
-        service = get_gmail_service(account)
-        result = service.users().labels().list(userId="me").execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.list_labels()
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -31,9 +30,9 @@ def gmail_label_get(
 ) -> str:
     """Get details of a single label including message/thread counts."""
     try:
-        service = get_gmail_service(account)
-        result = service.users().labels().get(userId="me", id=label_id).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.get_label(label_id)
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -47,14 +46,13 @@ def gmail_label_create(
 ) -> str:
     """Create a new user label."""
     try:
-        service = get_gmail_service(account)
-        body = {
-            "name": name,
-            "labelListVisibility": label_list_visibility,
-            "messageListVisibility": message_list_visibility,
-        }
-        result = service.users().labels().create(userId="me", body=body).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.create_label(
+            name=name,
+            label_list_visibility=label_list_visibility,
+            message_list_visibility=message_list_visibility,
+        )
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -69,18 +67,14 @@ def gmail_label_update(
 ) -> str:
     """Update a label's name or visibility settings."""
     try:
-        service = get_gmail_service(account)
-        body: dict = {}
-        if name is not None:
-            body["name"] = name
-        if label_list_visibility is not None:
-            body["labelListVisibility"] = label_list_visibility
-        if message_list_visibility is not None:
-            body["messageListVisibility"] = message_list_visibility
-        result = service.users().labels().patch(
-            userId="me", id=label_id, body=body
-        ).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.update_label(
+            label_id,
+            name=name,
+            label_list_visibility=label_list_visibility,
+            message_list_visibility=message_list_visibility,
+        )
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -92,8 +86,8 @@ def gmail_label_delete(
 ) -> str:
     """Delete a user label. System labels cannot be deleted."""
     try:
-        service = get_gmail_service(account)
-        service.users().labels().delete(userId="me", id=label_id).execute()
+        client = get_client(account)
+        client.delete_label(label_id)
         return json.dumps({"success": True, "label_id": label_id, "action": "deleted"}, indent=2)
     except Exception as exc:
         return _error_response(exc)

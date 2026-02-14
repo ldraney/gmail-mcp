@@ -7,8 +7,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from ..accounts import get_gmail_service
-from ..server import mcp, _error_response
+from ..server import mcp, get_client, _error_response, _slim_response
 
 
 @mcp.tool()
@@ -21,16 +20,15 @@ def gmail_threads_list(
 ) -> str:
     """List threads matching a query. Prefer this over messages_list for conversations."""
     try:
-        service = get_gmail_service(account)
-        kwargs: dict = {"userId": "me", "maxResults": max_results}
-        if query:
-            kwargs["q"] = query
-        if label_ids:
-            kwargs["labelIds"] = [lid.strip() for lid in label_ids.split(",")]
-        if page_token:
-            kwargs["pageToken"] = page_token
-        result = service.users().threads().list(**kwargs).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        label_list = [lid.strip() for lid in label_ids.split(",")] if label_ids else None
+        result = client.list_threads(
+            query=query,
+            max_results=max_results,
+            label_ids=label_list,
+            page_token=page_token,
+        )
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -43,11 +41,9 @@ def gmail_thread_get(
 ) -> str:
     """Get a thread with all its messages."""
     try:
-        service = get_gmail_service(account)
-        result = service.users().threads().get(
-            userId="me", id=thread_id, format=response_format
-        ).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.get_thread(thread_id, format_=response_format)
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -61,16 +57,11 @@ def gmail_thread_modify(
 ) -> str:
     """Modify labels on all messages in a thread."""
     try:
-        service = get_gmail_service(account)
-        body: dict = {}
-        if add_label_ids:
-            body["addLabelIds"] = [lid.strip() for lid in add_label_ids.split(",")]
-        if remove_label_ids:
-            body["removeLabelIds"] = [lid.strip() for lid in remove_label_ids.split(",")]
-        result = service.users().threads().modify(
-            userId="me", id=thread_id, body=body
-        ).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        add_list = [lid.strip() for lid in add_label_ids.split(",")] if add_label_ids else None
+        remove_list = [lid.strip() for lid in remove_label_ids.split(",")] if remove_label_ids else None
+        result = client.modify_thread(thread_id, add_label_ids=add_list, remove_label_ids=remove_list)
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -82,9 +73,9 @@ def gmail_thread_trash(
 ) -> str:
     """Move all messages in a thread to the trash."""
     try:
-        service = get_gmail_service(account)
-        result = service.users().threads().trash(userId="me", id=thread_id).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.trash_thread(thread_id)
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -96,9 +87,9 @@ def gmail_thread_untrash(
 ) -> str:
     """Remove all messages in a thread from the trash."""
     try:
-        service = get_gmail_service(account)
-        result = service.users().threads().untrash(userId="me", id=thread_id).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.untrash_thread(thread_id)
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -110,8 +101,8 @@ def gmail_thread_delete(
 ) -> str:
     """Permanently delete a thread (requires full access scope). Bypasses trash."""
     try:
-        service = get_gmail_service(account)
-        service.users().threads().delete(userId="me", id=thread_id).execute()
+        client = get_client(account)
+        client.delete_thread(thread_id)
         return json.dumps({"success": True, "thread_id": thread_id, "action": "permanently_deleted"}, indent=2)
     except Exception as exc:
         return _error_response(exc)

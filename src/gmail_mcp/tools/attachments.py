@@ -7,8 +7,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from ..accounts import get_gmail_service
-from ..server import mcp, _error_response
+from ..server import mcp, get_client, _error_response, _slim_response
 
 
 @mcp.tool()
@@ -19,10 +18,8 @@ def gmail_attachment_get(
 ) -> str:
     """Get attachment data (base64-encoded) from a message."""
     try:
-        service = get_gmail_service(account)
-        result = service.users().messages().attachments().get(
-            userId="me", messageId=message_id, id=attachment_id
-        ).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.get_attachment(message_id, attachment_id)
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)

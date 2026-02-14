@@ -7,8 +7,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from ..accounts import get_gmail_service
-from ..server import mcp, _error_response
+from ..server import mcp, get_client, _error_response, _slim_response, _parse_json
 
 
 @mcp.tool()
@@ -17,9 +16,9 @@ def gmail_filters_list(
 ) -> str:
     """List all filters in the account."""
     try:
-        service = get_gmail_service(account)
-        result = service.users().settings().filters().list(userId="me").execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.list_filters()
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -31,31 +30,26 @@ def gmail_filter_get(
 ) -> str:
     """Get a single filter by ID."""
     try:
-        service = get_gmail_service(account)
-        result = service.users().settings().filters().get(
-            userId="me", id=filter_id
-        ).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.get_filter(filter_id)
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
 
 @mcp.tool()
 def gmail_filter_create(
-    criteria: Annotated[str, Field(description="JSON string with filter criteria, e.g. {\"from\": \"boss@company.com\", \"subject\": \"urgent\"}")],
-    action: Annotated[str, Field(description="JSON string with filter action, e.g. {\"addLabelIds\": [\"IMPORTANT\"], \"removeLabelIds\": [\"UNREAD\"]}")],
+    criteria: Annotated[str, Field(description='JSON string with filter criteria, e.g. {"from": "boss@company.com", "subject": "urgent"}')],
+    action: Annotated[str, Field(description='JSON string with filter action, e.g. {"addLabelIds": ["IMPORTANT"], "removeLabelIds": ["UNREAD"]}')],
     account: Annotated[str | None, Field(description="Account alias or email")] = None,
 ) -> str:
     """Create a new email filter with matching criteria and actions."""
     try:
-        service = get_gmail_service(account)
-        criteria_obj = json.loads(criteria) if isinstance(criteria, str) else criteria
-        action_obj = json.loads(action) if isinstance(action, str) else action
-        body = {"criteria": criteria_obj, "action": action_obj}
-        result = service.users().settings().filters().create(
-            userId="me", body=body
-        ).execute()
-        return json.dumps(result, indent=2)
+        criteria_obj = _parse_json(criteria, "criteria")
+        action_obj = _parse_json(action, "action")
+        client = get_client(account)
+        result = client.create_filter(criteria=criteria_obj, action=action_obj)
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -67,10 +61,8 @@ def gmail_filter_delete(
 ) -> str:
     """Delete a filter."""
     try:
-        service = get_gmail_service(account)
-        service.users().settings().filters().delete(
-            userId="me", id=filter_id
-        ).execute()
+        client = get_client(account)
+        client.delete_filter(filter_id)
         return json.dumps({"success": True, "filter_id": filter_id, "action": "deleted"}, indent=2)
     except Exception as exc:
         return _error_response(exc)

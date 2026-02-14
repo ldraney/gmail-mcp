@@ -7,8 +7,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from ..accounts import get_gmail_service
-from ..server import mcp, _error_response
+from ..server import mcp, get_client, _error_response, _slim_response
 
 
 @mcp.tool()
@@ -17,9 +16,9 @@ def gmail_vacation_get(
 ) -> str:
     """Get the current vacation auto-reply settings."""
     try:
-        service = get_gmail_service(account)
-        result = service.users().settings().getVacation(userId="me").execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.get_vacation_settings()
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
 
@@ -33,30 +32,22 @@ def gmail_vacation_set(
     response_body_html: Annotated[str | None, Field(description="HTML body for the auto-reply (takes precedence over plain text)")] = None,
     restrict_to_contacts: Annotated[bool, Field(description="Only send auto-reply to contacts")] = False,
     restrict_to_domain: Annotated[bool, Field(description="Only send auto-reply to same domain")] = False,
-    start_time: Annotated[str | None, Field(description="Start time in epoch milliseconds (as string)")] = None,
-    end_time: Annotated[str | None, Field(description="End time in epoch milliseconds (as string)")] = None,
+    start_time: Annotated[int | None, Field(description="Start time in epoch milliseconds")] = None,
+    end_time: Annotated[int | None, Field(description="End time in epoch milliseconds")] = None,
 ) -> str:
     """Set vacation auto-reply settings."""
     try:
-        service = get_gmail_service(account)
-        body: dict = {
-            "enableAutoReply": enable_auto_reply,
-            "restrictToContacts": restrict_to_contacts,
-            "restrictToDomain": restrict_to_domain,
-        }
-        if response_subject is not None:
-            body["responseSubject"] = response_subject
-        if response_body_html is not None:
-            body["responseBodyHtml"] = response_body_html
-        elif response_body_plain_text is not None:
-            body["responseBodyPlainText"] = response_body_plain_text
-        if start_time is not None:
-            body["startTime"] = int(start_time)
-        if end_time is not None:
-            body["endTime"] = int(end_time)
-        result = service.users().settings().updateVacation(
-            userId="me", body=body
-        ).execute()
-        return json.dumps(result, indent=2)
+        client = get_client(account)
+        result = client.update_vacation_settings(
+            enable_auto_reply=enable_auto_reply,
+            response_subject=response_subject,
+            response_body_plain_text=response_body_plain_text,
+            response_body_html=response_body_html,
+            restrict_to_contacts=restrict_to_contacts,
+            restrict_to_domain=restrict_to_domain,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)

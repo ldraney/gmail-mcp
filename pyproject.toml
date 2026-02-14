@@ -11,17 +11,18 @@ requires-python = ">=3.10"
 license = {text = "MIT"}
 dependencies = [
     "mcp>=1.0",
-    "google-api-python-client>=2.0",
-    "google-auth-httplib2>=0.1",
-    "google-auth-oauthlib>=1.0",
+    "ldraney-gmail-sdk>=0.1.0",
 ]
+
+[tool.uv.sources]
+ldraney-gmail-sdk = { path = "../gmail-sdk", editable = true }
 
 [project.scripts]
 ldraney-gmail-mcp = "gmail_mcp.server:main"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "pytest>=7.0",
+    "pytest>=8.0",
     "pytest-asyncio>=0.21",
 ]
 

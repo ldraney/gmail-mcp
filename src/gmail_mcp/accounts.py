@@ -1,18 +1,14 @@
-"""Multi-account resolution and per-account Gmail service cache."""
+"""Multi-account resolution — maps aliases to emails and detects configured accounts."""
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from .auth import SECRETS_DIR, build_gmail_service
+from .auth import SECRETS_DIR
 
 KNOWN_ACCOUNTS: dict[str, str] = {
     "draneylucas": "draneylucas@gmail.com",
     "lucastoddraney": "lucastoddraney@gmail.com",
     "devopsphilosopher": "devopsphilosopher@gmail.com",
 }
-
-_service_cache: dict[str, object] = {}
 
 
 def resolve_account(account: str | None) -> str:
@@ -50,14 +46,6 @@ def resolve_account(account: str | None) -> str:
 
     # Unknown account — still allow it (custom setups)
     return account
-
-
-def get_gmail_service(account: str | None = None):
-    """Get a Gmail API service for the given account (cached per alias)."""
-    alias = resolve_account(account)
-    if alias not in _service_cache:
-        _service_cache[alias] = build_gmail_service(alias)
-    return _service_cache[alias]
 
 
 def list_configured_accounts() -> list[str]:
