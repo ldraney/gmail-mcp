@@ -9,7 +9,7 @@
   },
   "server": {
     "type": "uv",
-    "entry_point": "src/run_server.py",
+    "entry_point": "src/gmail_mcp/__main__.py",
     "mcp_config": {
       "command": "uv",
       "args": ["tool", "run", "ldraney-gmail-mcp"],
@@ -32,6 +32,7 @@
     { "name": "gmail_message_get", "description": "Get a single message by ID" },
     { "name": "gmail_message_send", "description": "Send an email" },
     { "name": "gmail_message_reply", "description": "Reply to a message" },
+    { "name": "gmail_message_reply_all", "description": "Reply-all to a message" },
     { "name": "gmail_message_forward", "description": "Forward a message" },
     { "name": "gmail_message_modify", "description": "Modify labels on a message" },
     { "name": "gmail_message_archive", "description": "Archive a message" },
@@ -40,6 +41,8 @@
     { "name": "gmail_message_delete", "description": "Permanently delete a message" },
     { "name": "gmail_messages_batch_modify", "description": "Batch modify labels on messages" },
     { "name": "gmail_messages_batch_delete", "description": "Batch permanently delete messages" },
+    { "name": "gmail_mark_as_read", "description": "Mark a message as read" },
+    { "name": "gmail_mark_as_unread", "description": "Mark a message as unread" },
     { "name": "gmail_threads_list", "description": "List threads matching a query" },
     { "name": "gmail_thread_get", "description": "Get a thread with all messages" },
     { "name": "gmail_thread_modify", "description": "Modify labels on a thread" },
@@ -63,7 +66,8 @@
     { "name": "gmail_filter_create", "description": "Create a new filter" },
     { "name": "gmail_filter_delete", "description": "Delete a filter" },
     { "name": "gmail_vacation_get", "description": "Get vacation auto-reply settings" },
-    { "name": "gmail_vacation_set", "description": "Set vacation auto-reply settings" }
+    { "name": "gmail_vacation_set", "description": "Set vacation auto-reply settings" },
+    { "name": "gmail_history_list", "description": "List history of mailbox changes" }
   ],
   "compatibility": {
     "platforms": ["darwin", "linux", "win32"],

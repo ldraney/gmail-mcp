@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import json
-import os
 from typing import Any
 
 from gmail_sdk import GmailClient, GmailAPIError
 from mcp.server.fastmcp import FastMCP
 
 from .accounts import resolve_account
+from .auth import SECRETS_DIR
 
 mcp = FastMCP("gmail")
-
-SECRETS_DIR = os.environ.get("SECRETS_DIR", os.path.expanduser("~/secrets/google-oauth"))
 
 # ---------------------------------------------------------------------------
 # Per-account client cache
@@ -30,7 +28,7 @@ def get_client(account: str | None = None) -> GmailClient:
     """
     alias = resolve_account(account)
     if alias not in _clients:
-        _clients[alias] = GmailClient(account=alias, secrets_dir=SECRETS_DIR)
+        _clients[alias] = GmailClient(account=alias, secrets_dir=str(SECRETS_DIR))
     return _clients[alias]
 
 

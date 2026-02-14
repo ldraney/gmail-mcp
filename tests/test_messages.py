@@ -107,6 +107,24 @@ class TestMessageReply:
         mock_client.reply.assert_called_once_with("msg1", "Thanks!")
 
 
+class TestReplyAll:
+    def test_reply_all(self, mock_client):
+        from gmail_mcp.tools.messages import gmail_message_reply_all
+
+        mock_client.reply_all.return_value = {"id": "reply_all1", "threadId": "t1"}
+        result = json.loads(gmail_message_reply_all("msg1", "Thanks everyone!", account="draneylucas"))
+        assert result["id"] == "reply_all1"
+        mock_client.reply_all.assert_called_once_with("msg1", "Thanks everyone!")
+
+    def test_reply_all_error(self, mock_client):
+        from gmail_mcp.tools.messages import gmail_message_reply_all
+
+        mock_client.reply_all.side_effect = GmailAPIError(404, "Not found")
+        result = json.loads(gmail_message_reply_all("msg1", "body", account="draneylucas"))
+        assert result["error"] is True
+        assert result["status_code"] == 404
+
+
 class TestMessageForward:
     def test_forward(self, mock_client):
         from gmail_mcp.tools.messages import gmail_message_forward
@@ -137,22 +155,18 @@ class TestMarkAsRead:
     def test_mark_as_read(self, mock_client):
         from gmail_mcp.tools.messages import gmail_mark_as_read
 
-        mock_client.modify_message.return_value = {"id": "msg1", "labelIds": ["INBOX"]}
+        mock_client.mark_as_read.return_value = {"id": "msg1", "labelIds": ["INBOX"]}
         result = json.loads(gmail_mark_as_read("msg1", account="draneylucas"))
         assert "UNREAD" not in result.get("labelIds", [])
-        mock_client.modify_message.assert_called_once_with(
-            "msg1", remove_label_ids=["UNREAD"],
-        )
+        mock_client.mark_as_read.assert_called_once_with("msg1")
 
     def test_mark_as_unread(self, mock_client):
         from gmail_mcp.tools.messages import gmail_mark_as_unread
 
-        mock_client.modify_message.return_value = {"id": "msg1", "labelIds": ["INBOX", "UNREAD"]}
+        mock_client.mark_as_unread.return_value = {"id": "msg1", "labelIds": ["INBOX", "UNREAD"]}
         result = json.loads(gmail_mark_as_unread("msg1", account="draneylucas"))
         assert "UNREAD" in result["labelIds"]
-        mock_client.modify_message.assert_called_once_with(
-            "msg1", add_label_ids=["UNREAD"],
-        )
+        mock_client.mark_as_unread.assert_called_once_with("msg1")
 
 
 class TestBatchModify:
@@ -167,6 +181,26 @@ class TestBatchModify:
         mock_client.batch_modify_messages.assert_called_once_with(
             ["msg1", "msg2"], add_label_ids=["STARRED"], remove_label_ids=None,
         )
+
+
+class TestBatchDelete:
+    def test_batch_delete(self, mock_client):
+        from gmail_mcp.tools.messages import gmail_messages_batch_delete
+
+        mock_client.batch_delete_messages.return_value = None
+        result = json.loads(gmail_messages_batch_delete("msg1,msg2,msg3", account="draneylucas"))
+        assert result["success"] is True
+        assert result["action"] == "batch_deleted"
+        assert result["count"] == 3
+        mock_client.batch_delete_messages.assert_called_once_with(["msg1", "msg2", "msg3"])
+
+    def test_batch_delete_error(self, mock_client):
+        from gmail_mcp.tools.messages import gmail_messages_batch_delete
+
+        mock_client.batch_delete_messages.side_effect = GmailAPIError(403, "Insufficient scope")
+        result = json.loads(gmail_messages_batch_delete("msg1", account="draneylucas"))
+        assert result["error"] is True
+        assert result["status_code"] == 403
 
 
 class TestMessageDelete:

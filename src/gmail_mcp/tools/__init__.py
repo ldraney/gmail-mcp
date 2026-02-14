@@ -12,3 +12,4 @@ def register_all_tools() -> None:
     from . import attachments  # noqa: F401
     from . import filters  # noqa: F401
     from . import settings  # noqa: F401
+    from . import history  # noqa: F401

@@ -211,7 +211,7 @@ def gmail_mark_as_read(
     """Mark a message as read (remove UNREAD label)."""
     try:
         client = get_client(account)
-        result = client.modify_message(message_id, remove_label_ids=["UNREAD"])
+        result = client.mark_as_read(message_id)
         return json.dumps(_slim_response(result), indent=2)
     except Exception as exc:
         return _error_response(exc)
@@ -225,7 +225,37 @@ def gmail_mark_as_unread(
     """Mark a message as unread (add UNREAD label)."""
     try:
         client = get_client(account)
-        result = client.modify_message(message_id, add_label_ids=["UNREAD"])
+        result = client.mark_as_unread(message_id)
         return json.dumps(_slim_response(result), indent=2)
+    except Exception as exc:
+        return _error_response(exc)
+
+
+@mcp.tool()
+def gmail_message_reply_all(
+    message_id: Annotated[str, Field(description="The message ID to reply-all to")],
+    body: Annotated[str, Field(description="Reply body (plain text)")],
+    account: Annotated[str | None, Field(description="Account alias or email")] = None,
+) -> str:
+    """Reply-all to a message (replies to sender and all recipients, preserves thread)."""
+    try:
+        client = get_client(account)
+        result = client.reply_all(message_id, body)
+        return json.dumps(_slim_response(result), indent=2)
+    except Exception as exc:
+        return _error_response(exc)
+
+
+@mcp.tool()
+def gmail_messages_batch_delete(
+    message_ids: Annotated[str, Field(description="Comma-separated message IDs to permanently delete")],
+    account: Annotated[str | None, Field(description="Account alias or email")] = None,
+) -> str:
+    """Permanently delete multiple messages (requires full access scope). Bypasses trash."""
+    try:
+        client = get_client(account)
+        ids = [mid.strip() for mid in message_ids.split(",")]
+        client.batch_delete_messages(ids)
+        return json.dumps({"success": True, "action": "batch_deleted", "count": len(ids)}, indent=2)
     except Exception as exc:
         return _error_response(exc)

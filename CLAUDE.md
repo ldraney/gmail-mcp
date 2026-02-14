@@ -5,16 +5,17 @@
 ```
 src/gmail_mcp/
   server.py            # FastMCP server, get_client(), helpers (_slim_response, _error_response, _parse_json)
-  auth.py              # OAuth config (SECRETS_DIR path, OAuthNotConfiguredError)
+  auth.py              # OAuth config (SECRETS_DIR path)
   accounts.py          # Multi-account resolution (resolve_account, list_configured_accounts)
   tools/
-    messages.py        # 15 tools: profile, list, get, send, reply, forward, modify, archive, trash/untrash, delete, batch_modify, mark_read/unread
+    messages.py        # 17 tools: profile, list, get, send, reply, reply_all, forward, modify, archive, trash/untrash, delete, batch_modify, batch_delete, mark_read/unread
     threads.py         # 6 tools: list, get, modify, trash/untrash, delete
     drafts.py          # 6 tools: list, get, create, update, send, delete
     labels.py          # 5 tools: list, get, create, update, delete
     attachments.py     # 1 tool: get attachment data
     filters.py         # 4 tools: list, get, create, delete
     settings.py        # 2 tools: vacation get/set
+    history.py         # 1 tool: list history changes
 manifest.json          # .mcpb desktop extension
 ```
 
