@@ -151,6 +151,36 @@ class TestMessageModify:
         )
 
 
+class TestMessageArchive:
+    def test_archive(self, mock_client):
+        from gmail_mcp.tools.messages import gmail_message_archive
+
+        mock_client.archive.return_value = {"id": "msg1", "labelIds": ["STARRED"]}
+        result = json.loads(gmail_message_archive("msg1", account="draneylucas"))
+        assert "INBOX" not in result.get("labelIds", [])
+        mock_client.archive.assert_called_once_with("msg1")
+
+
+class TestMessageTrash:
+    def test_trash(self, mock_client):
+        from gmail_mcp.tools.messages import gmail_message_trash
+
+        mock_client.trash_message.return_value = {"id": "msg1", "labelIds": ["TRASH"]}
+        result = json.loads(gmail_message_trash("msg1", account="draneylucas"))
+        assert result["id"] == "msg1"
+        mock_client.trash_message.assert_called_once_with("msg1")
+
+
+class TestMessageUntrash:
+    def test_untrash(self, mock_client):
+        from gmail_mcp.tools.messages import gmail_message_untrash
+
+        mock_client.untrash_message.return_value = {"id": "msg1", "labelIds": ["INBOX"]}
+        result = json.loads(gmail_message_untrash("msg1", account="draneylucas"))
+        assert result["id"] == "msg1"
+        mock_client.untrash_message.assert_called_once_with("msg1")
+
+
 class TestMarkAsRead:
     def test_mark_as_read(self, mock_client):
         from gmail_mcp.tools.messages import gmail_mark_as_read

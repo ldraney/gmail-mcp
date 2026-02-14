@@ -24,6 +24,7 @@ class TestHistoryList:
             start_history_id="99",
             label_id=None,
             max_results=100,
+            page_token=None,
             history_types=None,
         )
 
@@ -41,6 +42,7 @@ class TestHistoryList:
             start_history_id="100",
             label_id="INBOX",
             max_results=50,
+            page_token=None,
             history_types=["messageAdded", "labelAdded"],
         )
 
@@ -52,6 +54,15 @@ class TestHistoryList:
         assert "history" not in result
         assert result["historyId"] == "99"
 
+    def test_list_no_changes_includes_page_token(self, mock_client):
+        """Verify page_token=None is passed when not specified."""
+        from gmail_mcp.tools.history import gmail_history_list
+
+        mock_client.list_history.return_value = {"historyId": "99"}
+        gmail_history_list("99", account="draneylucas")
+        call_kwargs = mock_client.list_history.call_args[1]
+        assert call_kwargs["page_token"] is None
+
     def test_list_error(self, mock_client):
         from gmail_mcp.tools.history import gmail_history_list
 
@@ -59,3 +70,18 @@ class TestHistoryList:
         result = json.loads(gmail_history_list("0", account="draneylucas"))
         assert result["error"] is True
         assert result["status_code"] == 404
+
+
+class TestHistoryPagination:
+    def test_page_token_passed(self, mock_client):
+        from gmail_mcp.tools.history import gmail_history_list
+
+        mock_client.list_history.return_value = {"history": [], "historyId": "200"}
+        gmail_history_list("100", account="draneylucas", page_token="token123")
+        mock_client.list_history.assert_called_once_with(
+            start_history_id="100",
+            label_id=None,
+            max_results=100,
+            page_token="token123",
+            history_types=None,
+        )

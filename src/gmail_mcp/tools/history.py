@@ -16,6 +16,7 @@ def gmail_history_list(
     account: Annotated[str | None, Field(description="Account alias or email")] = None,
     label_id: Annotated[str | None, Field(description="Only return history for this label ID")] = None,
     max_results: Annotated[int, Field(description="Maximum number of history records to return")] = 100,
+    page_token: Annotated[str | None, Field(description="Token for fetching the next page of results")] = None,
     history_types: Annotated[str | None, Field(description="Comma-separated history types: messageAdded, messageDeleted, labelAdded, labelRemoved")] = None,
 ) -> str:
     """List history of mailbox changes since a given history ID. Useful for incremental sync."""
@@ -26,6 +27,7 @@ def gmail_history_list(
             start_history_id=start_history_id,
             label_id=label_id,
             max_results=max_results,
+            page_token=page_token,
             history_types=types_list,
         )
         return json.dumps(_slim_response(result), indent=2)
