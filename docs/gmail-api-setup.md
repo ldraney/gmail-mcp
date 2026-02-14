@@ -67,13 +67,15 @@ If you do not need permanent delete, the three granular scopes (`gmail.readonly`
 
 ## 2. Multi-Account Setup
 
-We manage three Gmail accounts. The `gmail-mcp` server handles OAuth and token management itself -- you run one server instance per account, and each server handles its own authentication through a browser-based OAuth flow.
+> **Architecture change:** The `gmail-mcp` server now runs as a **single instance** that handles all accounts. Every tool accepts an optional `account` parameter (alias like `"draneylucas"` or full email). Token files are stored per-account at `~/secrets/google-oauth/gmail-{alias}.json`. The previous multi-instance/multi-port design is superseded.
 
-| Account | Server name | Port |
-|---------|------------|------|
-| `draneylucas@gmail.com` | `gmail-draneylucas` | 3010 |
-| `lucastoddraney@gmail.com` | `gmail-lucastoddraney` | 3011 |
-| `devopsphilosopher@gmail.com` | `gmail-devopsphilosopher` | 3012 |
+We manage three Gmail accounts through one server:
+
+| Account | Alias | Token file |
+|---------|-------|-----------|
+| `draneylucas@gmail.com` | `draneylucas` | `gmail-draneylucas.json` |
+| `lucastoddraney@gmail.com` | `lucastoddraney` | `gmail-lucastoddraney.json` |
+| `devopsphilosopher@gmail.com` | `devopsphilosopher` | `gmail-devopsphilosopher.json` |
 
 ### How authentication works
 
@@ -105,80 +107,41 @@ You should see the email address in the response.
 
 ## 3. MCP Server Configuration for Claude Code
 
-The `gmail-mcp` server (npm package: `gmail-mcp`) runs one instance per account. Choose **one** of the two approaches below.
+The `gmail-mcp` server runs as a **single instance** handling all accounts. Each tool accepts an `account` parameter to select which account to use.
 
-### Approach A: `.mcp.json` config (recommended)
+### `.mcp.json` config (recommended)
 
-Claude Code manages the server lifecycle. When Claude Code starts, it launches each server automatically. This is the simplest approach.
-
-**.mcp.json** (place in your project root):
+**.mcp.json** (place in your project root or `~/.mcp.json` for global):
 
 ```json
 {
   "mcpServers": {
-    "gmail-draneylucas": {
-      "command": "npx",
-      "args": ["gmail-mcp"],
+    "gmail": {
+      "command": "uvx",
+      "args": ["ldraney-gmail-mcp"],
       "env": {
-        "GOOGLE_CLIENT_ID": "YOUR_CLIENT_ID.apps.googleusercontent.com",
-        "GOOGLE_CLIENT_SECRET": "GOCSPX-YOUR_SECRET",
-        "PORT": "3010"
-      }
-    },
-    "gmail-lucastoddraney": {
-      "command": "npx",
-      "args": ["gmail-mcp"],
-      "env": {
-        "GOOGLE_CLIENT_ID": "YOUR_CLIENT_ID.apps.googleusercontent.com",
-        "GOOGLE_CLIENT_SECRET": "GOCSPX-YOUR_SECRET",
-        "PORT": "3011"
-      }
-    },
-    "gmail-devopsphilosopher": {
-      "command": "npx",
-      "args": ["gmail-mcp"],
-      "env": {
-        "GOOGLE_CLIENT_ID": "YOUR_CLIENT_ID.apps.googleusercontent.com",
-        "GOOGLE_CLIENT_SECRET": "GOCSPX-YOUR_SECRET",
-        "PORT": "3012"
+        "SECRETS_DIR": "~/secrets/google-oauth"
       }
     }
   }
 }
 ```
 
-Get your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from `~/secrets/google-oauth/credentials.json` (the Desktop OAuth credentials created in the [OAuth guide](https://github.com/ldraney/calendar-mcp/blob/main/docs/google-oauth-setup.md)).
+The `SECRETS_DIR` environment variable points to the directory containing `credentials.json` and per-account token files (`gmail-draneylucas.json`, etc.). Defaults to `~/secrets/google-oauth/` if not set.
 
 You can also add the same config to `~/.claude/settings.json` under the `"mcpServers"` key for global availability across all projects.
 
-### Approach B: Manual server management + CLI registration (alternative)
-
-If you prefer to manage server processes yourself (e.g., via tmux, systemd, or background processes), start each server manually and register them with Claude Code.
-
-**Step 1: Start the servers:**
+### Alternative: CLI registration
 
 ```bash
-# Start each server in separate terminals or background processes
-GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' PORT=3010 npx gmail-mcp &
-GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' PORT=3011 npx gmail-mcp &
-GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' PORT=3012 npx gmail-mcp &
+claude mcp add gmail -- uvx ldraney-gmail-mcp
 ```
-
-**Step 2: Register with Claude Code:**
-
-```bash
-claude mcp add --transport http gmail-draneylucas http://localhost:3010/mcp
-claude mcp add --transport http gmail-lucastoddraney http://localhost:3011/mcp
-claude mcp add --transport http gmail-devopsphilosopher http://localhost:3012/mcp
-```
-
-> **Do not combine both approaches.** If you use `.mcp.json` (Approach A), Claude Code launches the servers itself. If you also start servers manually, you will have port conflicts. Pick one.
 
 ---
 
 ## 4. Available Tools
 
-Once connected, Claude Code gets access to the full set of Gmail tools per account:
+Once connected, Claude Code gets access to 37 Gmail tools. Every tool accepts an optional `account` parameter (alias or email):
 
 - **Messages**: list, get, send, forward, modify labels, archive, trash/untrash, delete, batch operations
 - **Threads**: list, get (all messages), modify labels, trash/untrash, delete
@@ -236,35 +199,10 @@ secrets/
 
 ### MCP config security
 
-The `.mcp.json` file contains your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. While client IDs are semi-public, client secrets should be protected:
+The `.mcp.json` file references `SECRETS_DIR` which points to your token files. Keep `.mcp.json` in `.gitignore` as a precaution:
 
 - **Project-level `.mcp.json`**: Add it to `.gitignore` (included in the patterns above)
-- **`~/.claude/settings.json`**: Already outside any repo
-- **Environment variables** (most secure): Set credentials in your shell profile and reference them in config:
-
-```bash
-# In ~/.bashrc or ~/.zshrc
-export GOOGLE_CLIENT_ID="your-client-id"
-export GOOGLE_CLIENT_SECRET="your-client-secret"
-```
-
-Then reference them in `.mcp.json` (Claude Code expands env vars in MCP config):
-
-```json
-{
-  "mcpServers": {
-    "gmail-draneylucas": {
-      "command": "npx",
-      "args": ["gmail-mcp"],
-      "env": {
-        "GOOGLE_CLIENT_ID": "${GOOGLE_CLIENT_ID}",
-        "GOOGLE_CLIENT_SECRET": "${GOOGLE_CLIENT_SECRET}",
-        "PORT": "3010"
-      }
-    }
-  }
-}
-```
+- **`~/.mcp.json`**: Lives outside any repo
 
 ### Revoking access
 
