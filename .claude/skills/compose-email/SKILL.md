@@ -27,7 +27,7 @@ User provides recipient, subject, and intent. Agent drafts the body.
    ```
 5. Ask: "Send this, edit it, or discard?"
 6. On confirm: `gmail_draft_send(draft_id, account)`
-7. On edit: get changes, `gmail_draft_update(draft_id, to, subject, body)`, repeat from step 4
+7. On edit: get changes, `gmail_draft_update(draft_id, to, subject, body, account)`, repeat from step 4
 8. On discard: `gmail_draft_delete(draft_id, account)`
 
 ### Reply
@@ -37,15 +37,23 @@ User provides a message ID to reply to.
 2. Show the original message context (from, subject, key content)
 3. Draft reply based on user's intent
 4. Create draft reply: `gmail_draft_create(to, subject, body, thread_id=..., account)`
+   *(`thread_id` comes from the `threadId` field in the `gmail_message_get` response from step 1)*
 5. Present for review (same as above)
 6. On confirm: `gmail_draft_send(draft_id)`
 
 ### Forward
 User provides a message ID and target recipient.
 
-1. Fetch the original: `gmail_message_get(message_id)`
-2. Ask if user wants to add a note
-3. Forward: `gmail_message_forward(message_id, to, note, account)`
+1. Fetch the original: `gmail_message_get(message_id, response_format="full", account)`
+2. Present what will be forwarded (from, subject, body summary) and ask if user wants to add a note
+3. Create a draft with the forwarded content: `gmail_draft_create(to, subject="Fwd: [original subject]", body="[optional note]\n\n---------- Forwarded message ----------\n[original content]", account)`
+4. Present the full draft for review (same format as New Email step 4)
+5. Ask: "Send this, edit it, or discard?"
+6. On confirm: `gmail_draft_send(draft_id, account)`
+7. On edit: get changes, `gmail_draft_update(draft_id, to, subject, body, account)`, repeat from step 4
+8. On discard: `gmail_draft_delete(draft_id, account)`
+
+**Note:** Do NOT use `gmail_message_forward` directly — it sends immediately without review. Always use the draft workflow above to give the user a chance to review before sending.
 
 ## Safety
 

@@ -24,7 +24,7 @@ Every tool accepts an `account` parameter. Pass the alias string (e.g., `"draney
 | `gmail_threads_list` | Search/list threads (IDs only) | `query`, `max_results`, `label_ids` |
 | `gmail_thread_get` | Full thread with all messages | `thread_id`, `response_format` |
 | `gmail_drafts_list` | List drafts | `query`, `max_results` |
-| `gmail_draft_get` | Full draft content | `draft_id` |
+| `gmail_draft_get` | Full draft content | `draft_id`, `response_format` |
 | `gmail_labels_list` | All labels (system + user) | — |
 | `gmail_label_get` | Single label with counts | `label_id` |
 | `gmail_filters_list` | All email filters | — |
@@ -55,12 +55,12 @@ Every tool accepts an `account` parameter. Pass the alias string (e.g., `"draney
 
 | Tool | Purpose | Notes |
 |---|---|---|
-| `gmail_message_send` | Send a new email | `to`, `subject`, `body` required |
+| `gmail_message_send` | Send a new email | `to`, `subject`, `body` required; optional `cc`, `bcc` |
 | `gmail_message_reply` | Reply to sender only | Preserves thread |
 | `gmail_message_reply_all` | Reply to all recipients | Preserves thread |
 | `gmail_message_forward` | Forward to another address | Optional `note` prepended |
-| `gmail_draft_create` | Create a draft | Optional `thread_id` for reply drafts |
-| `gmail_draft_update` | Replace draft content | Requires all fields (to, subject, body) |
+| `gmail_draft_create` | Create a draft | Optional `thread_id` for reply drafts; optional `cc`, `bcc` |
+| `gmail_draft_update` | Replace draft content | Requires all fields (to, subject, body); optional `cc`, `bcc` |
 | `gmail_draft_send` | Send an existing draft | — |
 | `gmail_draft_delete` | Delete a draft | Permanent |
 

@@ -2,6 +2,7 @@
 name: bulk-cleanup
 description: Deep clean an inbox — find and remove old newsletters, promotions, large emails, and duplicate senders
 argument-hint: "[account]"
+disable-model-invocation: true
 ---
 
 # Bulk Email Cleanup
