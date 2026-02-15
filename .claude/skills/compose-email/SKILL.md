@@ -39,7 +39,7 @@ User provides a message ID to reply to.
 4. Create draft reply: `gmail_draft_create(to, subject, body, thread_id=..., account)`
    *(`thread_id` comes from the `threadId` field in the `gmail_message_get` response from step 1)*
 5. Present for review (same as above)
-6. On confirm: `gmail_draft_send(draft_id)`
+6. On confirm: `gmail_draft_send(draft_id, account)`
 
 ### Forward
 User provides a message ID and target recipient.
