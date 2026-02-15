@@ -54,7 +54,7 @@ jobs:
         id: pypi_check
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "https://pypi.org/pypi/ldraney-gmail-mcp/${{ steps.version.outputs.version }}/json")
+            "https://pypi.org/pypi/gmail-mcp-ldraney/${{ steps.version.outputs.version }}/json")
           if [ "$STATUS" = "200" ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "Version ${{ steps.version.outputs.version }} already on PyPI — skipping publish."
@@ -91,10 +91,10 @@ jobs:
             echo "Error: no .mcpb file found after packing"
             exit 1
           fi
-          if [ "$MCPB_FILE" != "ldraney-gmail-mcp.mcpb" ]; then
-            mv "$MCPB_FILE" ldraney-gmail-mcp.mcpb
+          if [ "$MCPB_FILE" != "gmail-mcp-ldraney.mcpb" ]; then
+            mv "$MCPB_FILE" gmail-mcp-ldraney.mcpb
           fi
-          echo "Bundle ready: ldraney-gmail-mcp.mcpb"
+          echo "Bundle ready: gmail-mcp-ldraney.mcpb"
 
       - name: Create GitHub Release
         if: steps.pypi_check.outputs.exists == 'false'
@@ -102,6 +102,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          gh release create "v${VERSION}" ldraney-gmail-mcp.mcpb \
+          gh release create "v${VERSION}" gmail-mcp-ldraney.mcpb \
             --title "v${VERSION}" \
             --generate-notes

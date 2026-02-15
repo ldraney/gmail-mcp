@@ -1,8 +1,8 @@
 {
   "manifest_version": "0.4",
-  "name": "ldraney-gmail-mcp",
+  "name": "gmail-mcp-ldraney",
   "display_name": "Gmail",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for Gmail — read, triage, draft, and send across multiple accounts.",
   "author": {
     "name": "ldraney"
@@ -12,7 +12,7 @@
     "entry_point": "src/gmail_mcp/__main__.py",
     "mcp_config": {
       "command": "uv",
-      "args": ["tool", "run", "ldraney-gmail-mcp"],
+      "args": ["tool", "run", "gmail-mcp-ldraney"],
       "env": {
         "SECRETS_DIR": "${user_config.secrets_dir}"
       }
