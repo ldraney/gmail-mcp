@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gmail-mcp-ldraney"
-version = "0.1.1"
+version = "0.1.2"
 description = "MCP server for Gmail — read, triage, draft, and send across multiple accounts"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 dependencies = [
     "mcp>=1.0",
-    "gmail-sdk-ldraney>=0.1.1",
+    "gmail-sdk-ldraney>=0.1.2",
 ]
 
 [tool.uv.sources]
