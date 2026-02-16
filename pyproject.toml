@@ -9,6 +9,18 @@ description = "MCP server for Gmail — read, triage, draft, and send across mul
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
+authors = [{name = "Lucas Draney"}]
+keywords = ["gmail", "mcp", "email", "claude", "ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Developers",
+    "Topic :: Communications :: Email",
+]
 dependencies = [
     "mcp>=1.0",
     "gmail-sdk-ldraney>=0.1.2",
@@ -19,6 +31,10 @@ gmail-sdk-ldraney = { path = "../gmail-sdk", editable = true }
 
 [project.scripts]
 gmail-mcp-ldraney = "gmail_mcp.server:main"
+
+[project.urls]
+Repository = "https://github.com/ldraney/gmail-mcp"
+Issues = "https://github.com/ldraney/gmail-mcp/issues"
 
 [dependency-groups]
 dev = [
